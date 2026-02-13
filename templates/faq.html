@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}FAQ - YouTube Downloader{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <h1>Frequently Asked Questions</h1>
+  <p>Find answers to common questions about our YouTube downloader</p>
+</section>
+
+<section class="page-content faq-content">
+  <div class="faq-item">
+    <h3>Is this tool free to use?</h3>
+    <p>Yes, this YouTube downloader is completely free. There are no hidden fees, premium plans, or download limits. It will always remain free for personal and educational use.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Is it safe to use?</h3>
+    <p>Absolutely. We don't store any of your data, don't require registration, and all downloads are processed securely. Files are temporarily stored during processing and immediately deleted after delivery to you.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Why can't some videos be downloaded?</h3>
+    <p>Several reasons might prevent downloads:</p>
+    <ul>
+      <li><strong>Age restrictions:</strong> Videos with age gates may require authentication</li>
+      <li><strong>Geographic restrictions:</strong> Some content is region-locked</li>
+      <li><strong>Copyright protection:</strong> Certain videos have enhanced DRM protection</li>
+      <li><strong>Private videos:</strong> Videos set to private cannot be accessed</li>
+      <li><strong>Live streams:</strong> Active live streams may not download correctly</li>
+    </ul>
+  </div>
+
+  <div class="faq-item">
+    <h3>Which formats are supported?</h3>
+    <p>We support two primary formats:</p>
+    <ul>
+      <li><strong>MP4 (Video):</strong> Download full video with audio in resolutions from 360p to 4K (2160p)</li>
+      <li><strong>MP3 (Audio):</strong> Extract audio-only files in bitrates from 96 kbps to 320 kbps</li>
+    </ul>
+  </div>
+
+  <div class="faq-item">
+    <h3>Do I need to install anything?</h3>
+    <p>No installation is required on your end. This is a web-based tool that works directly in your browser. However, the server requires FFmpeg for MP3 extraction and video merging.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Why is my download taking so long?</h3>
+    <p>Download time depends on several factors:</p>
+    <ul>
+      <li>Video length (longer videos take more time)</li>
+      <li>Selected quality (4K takes longer than 360p)</li>
+      <li>Server load and your internet connection speed</li>
+      <li>YouTube's server response time</li>
+    </ul>
+  </div>
+
+  <div class="faq-item">
+    <h3>Can I download playlists?</h3>
+    <p>Currently, playlist downloads are not supported. You'll need to download videos one at a time by pasting individual video URLs.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Is this legal?</h3>
+    <p>Downloading YouTube videos can be legal or illegal depending on how you use them. This tool is intended for:</p>
+    <ul>
+      <li>Personal, non-commercial use</li>
+      <li>Educational purposes</li>
+      <li>Offline viewing of content you have rights to</li>
+    </ul>
+    <p>Users must respect copyright laws and YouTube's Terms of Service. The developer is not responsible for any misuse of this tool.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>What quality should I choose?</h3>
+    <p>It depends on your needs:</p>
+    <ul>
+      <li><strong>4K (2160p):</strong> Best quality, largest file size - for archival or large displays</li>
+      <li><strong>1080p:</strong> High quality, reasonable size - great for most uses</li>
+      <li><strong>720p:</strong> Good quality, smaller size - ideal for mobile devices</li>
+      <li><strong>360p/480p:</strong> Lower quality, smallest size - for previews or limited storage</li>
+    </ul>
+  </div>
+
+  <div class="faq-item">
+    <h3>Does this work on mobile devices?</h3>
+    <p>Yes! Our tool is fully responsive and works on smartphones and tablets. Simply open it in your mobile browser and use it the same way as on desktop.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Where are my downloads saved?</h3>
+    <p>Downloads are saved to your browser's default download folder. You can change this location in your browser settings. On most browsers, you'll see a download notification when the file is ready.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Can I use this tool commercially?</h3>
+    <p>No. This tool is strictly for personal and educational use only. Commercial use, redistribution, or using downloaded content for profit violates YouTube's Terms of Service and copyright laws.</p>
+  </div>
+</section>
+{% endblock %}

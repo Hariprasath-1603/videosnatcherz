@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Home - YouTube Downloader{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero-content">
+    <h1 class="hero-title">Fast & Free YouTube Downloader</h1>
+    <p class="hero-subtitle">Download videos and audio in high quality instantly. Simple, fast, and secure.</p>
+    <a href="/downloader" class="hero-btn">Start Downloading</a>
+  </div>
+</section>
+
+<section class="features-preview">
+  <h2 class="section-title">Why Choose Us?</h2>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🎥</div>
+      <h3>Multiple Quality Options</h3>
+      <p>Download videos in 360p to 4K resolution or extract audio in MP3 format.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>Fast Processing</h3>
+      <p>Powered by yt-dlp and FFmpeg for lightning-fast downloads.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <h3>Simple & Secure</h3>
+      <p>No data stored. Downloads are temporary and handled securely.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎵</div>
+      <h3>MP3 Extraction</h3>
+      <p>Extract audio from videos in multiple bitrates (96-320 kbps).</p>
+    </div>
+  </div>
+</section>
+
+<section class="how-it-works">
+  <h2 class="section-title">How It Works</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-number">1</div>
+      <h3>Paste URL</h3>
+      <p>Copy any YouTube video link and paste it into the input field.</p>
+    </div>
+    <div class="step">
+      <div class="step-number">2</div>
+      <h3>Choose Format</h3>
+      <p>Select MP4 for video or MP3 for audio, then pick your quality.</p>
+    </div>
+    <div class="step">
+      <div class="step-number">3</div>
+      <h3>Download</h3>
+      <p>Click download and the file will be saved to your device instantly.</p>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section">
+  <h2>Ready to Download?</h2>
+  <p>Start downloading your favorite YouTube videos and audio now.</p>
+  <a href="/downloader" class="cta-btn">Go to Downloader</a>
+</section>
+{% endblock %}

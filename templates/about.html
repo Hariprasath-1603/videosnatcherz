@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}About - YouTube Downloader{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <h1>About This Project</h1>
+  <p>Learn more about why and how this tool was built</p>
+</section>
+
+<section class="page-content about-content">
+  <div class="about-section">
+    <h2>Project Overview</h2>
+    <p>This YouTube Video Downloader is a web-based application designed to provide users with a simple, efficient way to download YouTube videos in multiple quality formats and extract audio in MP3 format.</p>
+    <p>With the rapid growth of online video streaming platforms, users often require offline access to educational, entertainment, or informational content. This project addresses that need by integrating modern video extraction and conversion technologies into a seamless web application.</p>
+  </div>
+
+  <div class="about-section">
+    <h2>Why This Project?</h2>
+    <p>The main objectives behind this project include:</p>
+    <ul>
+      <li><strong>Accessibility:</strong> Provide easy offline access to YouTube content for educational and personal learning purposes</li>
+      <li><strong>Simplicity:</strong> Create a user-friendly interface that anyone can use without technical knowledge</li>
+      <li><strong>Learning:</strong> Demonstrate full-stack web development, API integration, and media processing workflows</li>
+      <li><strong>Privacy:</strong> Offer a solution that doesn't store user data or require registration</li>
+    </ul>
+  </div>
+
+  <div class="about-section">
+    <h2>Technologies Used</h2>
+    <div class="tech-grid">
+      <div class="tech-item">
+        <h4>Backend</h4>
+        <ul>
+          <li>FastAPI - Modern Python web framework</li>
+          <li>yt-dlp - YouTube video extraction library</li>
+          <li>FFmpeg - Audio/video processing</li>
+        </ul>
+      </div>
+      <div class="tech-item">
+        <h4>Frontend</h4>
+        <ul>
+          <li>HTML5 & CSS3 - Modern web standards</li>
+          <li>JavaScript (ES6+) - Interactive features</li>
+          <li>Responsive Design - Mobile-first approach</li>
+        </ul>
+      </div>
+      <div class="tech-item">
+        <h4>Development</h4>
+        <ul>
+          <li>Python 3.10+ - Backend language</li>
+          <li>Jinja2 - Template engine</li>
+          <li>Uvicorn - ASGI server</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="about-section">
+    <h2>Development Goals</h2>
+    <p>This project was developed to:</p>
+    <ul>
+      <li>Improve skills in API-based backend development</li>
+      <li>Learn third-party library integration (yt-dlp, FFmpeg)</li>
+      <li>Practice file processing and handling media data</li>
+      <li>Understand full-stack web development concepts</li>
+      <li>Create a practical tool that solves a real-world need</li>
+    </ul>
+  </div>
+
+  <div class="about-section">
+    <h2>Legal Notice</h2>
+    <p>This tool is developed for <strong>educational and personal learning purposes only</strong>. Users must:</p>
+    <ul>
+      <li>Respect copyright and intellectual property rights</li>
+      <li>Comply with YouTube's Terms of Service</li>
+      <li>Use downloaded content only for personal, non-commercial purposes</li>
+      <li>Understand that the developer is not responsible for misuse of this tool</li>
+    </ul>
+  </div>
+</section>
+{% endblock %}

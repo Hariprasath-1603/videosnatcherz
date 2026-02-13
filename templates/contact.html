@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Contact - YouTube Downloader{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <h1>Contact Us</h1>
+  <p>Get in touch for questions, feedback, or support</p>
+</section>
+
+<section class="page-content contact-content">
+  <div class="contact-intro">
+    <p>Have questions about the tool? Found a bug? Want to provide feedback? We'd love to hear from you!</p>
+  </div>
+
+  <div class="contact-grid">
+    <div class="contact-form-section">
+      <h2>Send a Message</h2>
+      <form class="contact-form" id="contact-form">
+        <label class="field">
+          <span>Name</span>
+          <input type="text" name="name" placeholder="Your name" required />
+        </label>
+
+        <label class="field">
+          <span>Email</span>
+          <input type="email" name="email" placeholder="your.email@example.com" required />
+        </label>
+
+        <label class="field">
+          <span>Subject</span>
+          <input type="text" name="subject" placeholder="What's this about?" required />
+        </label>
+
+        <label class="field">
+          <span>Message</span>
+          <textarea name="message" rows="6" placeholder="Your message here..." required></textarea>
+        </label>
+
+        <button type="submit" class="download-btn">Send Message</button>
+      </form>
+      <div id="contact-status" class="contact-status"></div>
+    </div>
+
+    <div class="contact-info-section">
+      <h2>Other Ways to Connect</h2>
+      
+      <div class="contact-method">
+        <h3>📧 Email</h3>
+        <p>For detailed inquiries or support requests, you can email us directly.</p>
+        <a href="mailto:support@ytdownloader.example.com">support@ytdownloader.example.com</a>
+      </div>
+
+      <div class="contact-method">
+        <h3>💻 GitHub</h3>
+        <p>Check out the source code, report issues, or contribute to the project.</p>
+        <a href="https://github.com/yourusername/yt-downloader" target="_blank">View on GitHub</a>
+      </div>
+
+      <div class="contact-method">
+        <h3>📚 Documentation</h3>
+        <p>Before contacting, check our FAQ page for common questions and solutions.</p>
+        <a href="/faq">Visit FAQ</a>
+      </div>
+
+      <div class="contact-notice">
+        <h4>⚠️ Important Notice</h4>
+        <p>This is an educational project. Response times may vary. For immediate help, please check the FAQ section first.</p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const contactForm = document.getElementById('contact-form');
+const contactStatus = document.getElementById('contact-status');
+
+contactForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const submitBtn = contactForm.querySelector('button[type="submit"]');
+  const originalText = submitBtn.textContent;
+  
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Sending...';
+  contactStatus.textContent = '';
+  contactStatus.style.background = '';
+  
+  const formData = new FormData(contactForm);
+  
+  try {
+    const response = await fetch('/api/contact', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      contactStatus.textContent = '✓ ' + result.message;
+      contactStatus.style.background = 'rgba(34, 197, 94, 0.15)';
+      contactStatus.style.color = '#22c55e';
+      contactStatus.style.border = '1px solid #22c55e';
+      contactStatus.style.padding = '12px';
+      contactStatus.style.borderRadius = '8px';
+      contactForm.reset();
+    } else {
+      throw new Error(result.detail || 'Failed to send message');
+    }
+  } catch (error) {
+    contactStatus.textContent = '✗ ' + error.message;
+    contactStatus.style.background = 'rgba(239, 68, 68, 0.15)';
+    contactStatus.style.color = '#ef4444';
+    contactStatus.style.border = '1px solid #ef4444';
+    contactStatus.style.padding = '12px';
+    contactStatus.style.borderRadius = '8px';
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalText;
+  }
+});
+</script>
+{% endblock %}
