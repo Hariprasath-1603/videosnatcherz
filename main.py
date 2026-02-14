@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 import shutil
 import smtplib
 import tempfile
@@ -40,6 +41,23 @@ SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 RECIPIENT_EMAIL = "hariprasath16032006@gmail.com"
 
 
+def validate_video_url(url: str) -> bool:
+    """Validate if URL is from a supported video platform."""
+    if not url or not url.strip():
+        return False
+    
+    # Check for supported video platforms
+    valid_patterns = [
+        r'(youtube\.com|youtu\.be)',
+        r'vimeo\.com',
+        r'dailymotion\.com',
+        r'twitch\.tv'
+    ]
+    
+    url_lower = url.lower()
+    return any(re.search(pattern, url_lower) for pattern in valid_patterns)
+
+
 def build_format_selector(quality: Optional[int]) -> str:
     """Build yt-dlp format selector respecting an optional max height."""
     if quality:
@@ -49,6 +67,9 @@ def build_format_selector(quality: Optional[int]) -> str:
 
 def download_media(url: str, media_format: str, quality: Optional[int], audio_quality: Optional[int] = None) -> Tuple[Path, str]:
     """Download media with yt-dlp and return the file path and temp dir used."""
+    if not validate_video_url(url):
+        raise HTTPException(status_code=400, detail="Invalid or unsupported video URL.")
+    
     tmpdir = tempfile.mkdtemp(prefix="ytdl_")
     outtmpl = str(Path(tmpdir) / "%(title)s.%(ext)s")
 
@@ -85,9 +106,33 @@ def download_media(url: str, media_format: str, quality: Optional[int], audio_qu
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
-    except Exception as exc:  # pragma: no cover - passthrough for now
+    except yt_dlp.utils.DownloadError as exc:
         shutil.rmtree(tmpdir, ignore_errors=True)
-        raise HTTPException(status_code=400, detail=f"Download failed: {exc}") from exc
+        error_msg = str(exc)
+        if "ERROR:" in error_msg:
+            # Extract just the relevant error message
+            error_msg = error_msg.split("ERROR:")[-1].strip()
+        if "ffmpeg" in error_msg.lower() or "postprocess" in error_msg.lower():
+            raise HTTPException(
+                status_code=500,
+                detail="FFmpeg is required for this format. Please ensure FFmpeg is installed."
+            ) from exc
+        elif "private" in error_msg.lower() or "available" in error_msg.lower():
+            raise HTTPException(
+                status_code=400,
+                detail="Video is unavailable, private, or region-restricted."
+            ) from exc
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Unable to download video. Please check the URL and try again."
+            ) from exc
+    except Exception as exc:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+        raise HTTPException(
+            status_code=500,
+            detail="An unexpected error occurred during download. Please try again."
+        ) from exc
 
     target_ext = "mp3" if media_format == "mp3" else "mp4"
     files = list(Path(tmpdir).glob(f"*.{target_ext}"))
@@ -100,8 +145,10 @@ def download_media(url: str, media_format: str, quality: Optional[int], audio_qu
 
 def extract_metadata(url: str) -> Dict[str, Optional[str]]:
     """Extract minimal metadata without downloading the media."""
-    ydl_opts = {
-        "quiet": True,
+    if not validate_video_url(url):
+        raise HTTPException(status_code=400, detail="Invalid or unsupported video URL.")
+    
+    ydl_opts ={"quiet": True,
         "noplaylist": True,
         "skip_download": True,
     }
@@ -109,8 +156,25 @@ def extract_metadata(url: str) -> Dict[str, Optional[str]]:
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
-    except Exception as exc:  # pragma: no cover - passthrough for now
-        raise HTTPException(status_code=400, detail=f"Metadata lookup failed: {exc}") from exc
+    except yt_dlp.utils.DownloadError as exc:
+        error_msg = str(exc)
+        if "ERROR:" in error_msg:
+            error_msg = error_msg.split("ERROR:")[-1].strip()
+        if "private" in error_msg.lower() or "available" in error_msg.lower():
+            raise HTTPException(
+                status_code=400,
+                detail="Video is unavailable, private, or region-restricted."
+            ) from exc
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Unable to fetch video information. Please check the URL."
+            ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="An unexpected error occurred while fetching video info."
+        ) from exc
 
     thumbnail = info.get("thumbnail")
     if not thumbnail:
@@ -174,12 +238,17 @@ async def download(
     quality: Optional[int] = Form(None),
     audio_quality: Optional[int] = Form(None),
 ):
+    # Validate inputs
+    if not url or not url.strip():
+        raise HTTPException(status_code=400, detail="URL is required.")
+    if not validate_video_url(url):
+        raise HTTPException(status_code=400, detail="Invalid or unsupported video URL.")
     if media_format not in {"mp4", "mp3"}:
-        raise HTTPException(status_code=400, detail="media_format must be 'mp4' or 'mp3'.")
+        raise HTTPException(status_code=400, detail="Format must be 'mp4' or 'mp3'.")
     if quality is not None and quality <= 0:
-        raise HTTPException(status_code=400, detail="quality must be a positive integer.")
+        raise HTTPException(status_code=400, detail="Quality must be a positive integer.")
     if audio_quality is not None and audio_quality <= 0:
-        raise HTTPException(status_code=400, detail="audio_quality must be a positive integer.")
+        raise HTTPException(status_code=400, detail="Audio quality must be a positive integer.")
 
     file_path, tmpdir = await asyncio.to_thread(download_media, url, media_format, quality, audio_quality)
     background_tasks.add_task(shutil.rmtree, tmpdir, True)
@@ -194,8 +263,10 @@ async def download(
 
 @app.get("/api/metadata")
 async def metadata(url: str):
-    if not url:
-        raise HTTPException(status_code=400, detail="url is required")
+    if not url or not url.strip():
+        raise HTTPException(status_code=400, detail="URL is required.")
+    if not validate_video_url(url):
+        raise HTTPException(status_code=400, detail="Invalid or unsupported video URL.")
     return await asyncio.to_thread(extract_metadata, url)
 
 

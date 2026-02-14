@@ -8,17 +8,20 @@
     <header>
       <p class="eyebrow">Personal / Educational use</p>
       <h1>YouTube Downloader</h1>
-      <p class="lede">Paste a YouTube link, pick a format, and grab the file. FFmpeg is required for MP3.</p>
+      <p class="lede">Paste a YouTube link, pick a format, and grab the file.</p>
     </header>
 
-    <div id="preview" class="preview">
+    <div id="preview" class="preview" data-state="empty">
       <div class="thumb">
         <div class="thumb-cover" id="thumb-placeholder">Paste a link to preview</div>
         <img id="thumb-img" alt="Video thumbnail" />
+        <div class="skeleton-thumb" id="skeleton-thumb"></div>
       </div>
       <div class="meta">
         <p id="meta-title" class="meta-title">No video loaded</p>
         <p id="meta-sub" class="meta-sub">Duration will appear here</p>
+        <div class="skeleton-text" id="skeleton-title"></div>
+        <div class="skeleton-text skeleton-text-small" id="skeleton-sub"></div>
       </div>
     </div>
 
