@@ -7,7 +7,29 @@
   <div class="hero-content">
     <h1 class="hero-title">Fast & Free YouTube Downloader</h1>
     <p class="hero-subtitle">Download videos and audio in high quality instantly. Simple, fast, and secure.</p>
-    <a href="/downloader" class="hero-btn">Start Downloading</a>
+    
+    <!-- Inline URL Input for Immediate Action -->
+    <div class="hero-download-box">
+      <form id="hero-form" class="hero-form">
+        <div class="hero-input-group">
+          <input 
+            type="url" 
+            id="hero-url-input"
+            name="url" 
+            placeholder="Paste YouTube URL here..." 
+            required 
+            aria-label="YouTube video URL"
+          />
+          <button type="submit" class="hero-submit-btn">
+            <span>Download</span>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 3V13M10 13L6 9M10 13L14 9M3 17H17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+        <p class="hero-hint">Supports YouTube • Works with all video lengths • Free forever</p>
+      </form>
+    </div>
   </div>
 </section>
 
@@ -57,10 +79,19 @@
     </div>
   </div>
 </section>
+{% endblock %}
 
-<section class="cta-section">
-  <h2>Ready to Download?</h2>
-  <p>Start downloading your favorite YouTube videos and audio now.</p>
-  <a href="/downloader" class="cta-btn">Go to Downloader</a>
-</section>
+{% block extra_js %}
+<script>
+// Hero form submission - redirect to downloader with URL
+document.getElementById('hero-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const url = document.getElementById('hero-url-input').value.trim();
+  if (url) {
+    // Store URL in sessionStorage to pre-fill on downloader page
+    sessionStorage.setItem('pendingDownloadUrl', url);
+    window.location.href = '/downloader';
+  }
+});
+</script>
 {% endblock %}

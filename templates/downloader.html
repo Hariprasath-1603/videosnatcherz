@@ -35,11 +35,12 @@
         <label class="field">
           <div class="label-row">
             <span>Format</span>
-            <span class="label-hint">MP4 = video • MP3 = audio</span>
+            <span class="label-hint">Video or Audio</span>
           </div>
           <select name="media_format" id="format-select">
             <option value="mp4">MP4 (video)</option>
-            <option value="mp3">MP3 (audio)</option>
+            <option value="mp3">MP3 (audio - converted)</option>
+            <option value="m4a">M4A (audio - instant)</option>
           </select>
         </label>
 
@@ -73,9 +74,17 @@
       </button>
     </form>
 
-    <div id="status" class="status">Idle</div>
+    <div id="status" class="status hidden"></div>
+    
+    <div id="progress-container" class="progress-container hidden">
+      <div class="progress-bar">
+        <div id="progress-fill" class="progress-fill"></div>
+      </div>
+      <div id="progress-text" class="progress-text">0%</div>
+    </div>
+    
     <div id="error-box" class="error-box hidden"></div>
-    <p class="fine-print">Please respect copyright and YouTube Terms of Service. This tool stores downloads only temporarily.</p>
+    <p class="fine-print">Audio downloads start streaming instantly. Video downloads typically start within seconds. Please respect copyright and YouTube Terms of Service.</p>
   </section>
 </div>
 {% endblock %}

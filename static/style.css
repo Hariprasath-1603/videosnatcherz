@@ -317,6 +317,8 @@ button.download-btn:hover:not(:disabled) {
   margin-top: 14px;
   font-size: 14px;
   color: var(--muted);
+  animation: fadeInUp 0.3s ease;
+  font-weight: 500;
 }
 
 .status.error {
@@ -332,14 +334,41 @@ button.download-btn:hover:not(:disabled) {
   color: #fca5a5;
   font-size: 14px;
   animation: slideIn 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
+
+.progress-container {
+  margin-top: 16px;
+  animation: fadeInUp 0.3s ease;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+  border-radius: 10px;
+  transition: width 0.3s ease;
+  width: 0%;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+}
+
+.progress-text {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  font-weight: 600;
 }
 
 .hidden {
-  display: none;
+  display: none !important;
 }
 
 .preview {
@@ -534,28 +563,111 @@ button.download-btn:hover:not(:disabled) {
 
 /* Home Page Styles */
 .hero {
-  padding: 100px 24px;
+  padding: 120px 24px 100px;
   text-align: center;
   max-width: 900px;
   margin: 0 auto;
 }
 
 .hero-title {
-  font-size: 52px;
+  font-size: 56px;
   font-weight: 700;
-  margin: 0 0 16px;
+  margin: 0 0 20px;
   background: linear-gradient(120deg, var(--text), var(--accent-a));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  line-height: 1.2;
 }
 
 .hero-subtitle {
-  font-size: 20px;
+  font-size: 22px;
   color: var(--muted);
-  margin: 0 0 32px;
+  margin: 0 0 48px;
+  line-height: 1.5;
 }
 
+/* Hero Download Box - Inline Input */
+.hero-download-box {
+  max-width: 680px;
+  margin: 0 auto;
+  animation: fadeInUp 0.6s ease 0.2s backwards;
+}
+
+.hero-form {
+  width: 100%;
+}
+
+.hero-input-group {
+  display: flex;
+  gap: 12px;
+  padding: 8px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  backdrop-filter: blur(20px);
+}
+
+.hero-input-group:focus-within {
+  border-color: var(--accent-a);
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.1), 0 8px 32px rgba(34, 197, 94, 0.15);
+}
+
+.hero-input-group input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 16px 20px;
+  font-size: 16px;
+  color: var(--text);
+  font-family: inherit;
+}
+
+.hero-input-group input::placeholder {
+  color: var(--label);
+}
+
+.hero-submit-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 32px;
+  background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+  color: #04111f;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.3s;
+  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.3);
+  white-space: nowrap;
+}
+
+.hero-submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(34, 197, 94, 0.4);
+}
+
+.hero-submit-btn:active {
+  transform: translateY(0);
+}
+
+.hero-submit-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.hero-hint {
+  margin: 16px 0 0;
+  font-size: 14px;
+  color: var(--label);
+  text-align: center;
+}
+
+/* Legacy button for compatibility */
 .hero-btn {
   display: inline-block;
   padding: 16px 40px;
@@ -673,7 +785,9 @@ button.download-btn:hover:not(:disabled) {
   line-height: 1.6;
 }
 
+/* CTA Section - Legacy (can be removed if not used elsewhere) */
 .cta-section {
+  display: none; /* Hidden by default - homepage now uses inline hero input */
   max-width: 700px;
   margin: 80px auto;
   padding: 60px 24px;
@@ -1007,6 +1121,25 @@ button.download-btn:hover:not(:disabled) {
 
   .hero-subtitle {
     font-size: 16px;
+  }
+
+  .hero {
+    padding: 80px 24px 60px;
+  }
+
+  .hero-input-group {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .hero-submit-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 18px 32px;
+  }
+
+  .hero-hint {
+    font-size: 13px;
   }
 
   .section-title {
