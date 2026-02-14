@@ -8,7 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css" />
+  <!-- Cache busting: Update version when CSS changes -->
+  <link rel="stylesheet" href="/static/style.css?v=1.1.0" />
   {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -67,7 +68,8 @@
     </div>
   </footer>
 
-  <script src="/static/nav.js"></script>
+  <!-- Cache busting: Update version when JS changes -->
+  <script src="/static/nav.js?v=1.0.0"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

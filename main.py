@@ -15,16 +15,25 @@ from urllib.parse import quote
 
 from fastapi import BackgroundTasks, FastAPI, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import TemplateNotFound
 import yt_dlp
 
+# Determine if running in production
+IS_PRODUCTION = os.environ.get("ENV", "development") == "production"
+
 app = FastAPI(
     title="YouTube Downloader",
     description="Download YouTube videos or audio for personal/educational use only.",
     version="0.1.0",
+    docs_url=None if IS_PRODUCTION else "/docs",  # Disable docs in production
+    redoc_url=None if IS_PRODUCTION else "/redoc",
 )
+
+# Enable Gzip compression for better performance
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,16 +42,42 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Mount static files with proper configuration
+# html=True allows serving index.html files from directories
+app.mount("/static", StaticFiles(directory="static", html=False), name="static")
+
+# Add static file cache headers for production
+@app.middleware("http")
+async def add_cache_headers(request: Request, call_next):
+    response = await call_next(request)
+    
+    # Add cache headers for static files in production
+    if request.url.path.startswith("/static/"):
+        if IS_PRODUCTION:
+            # Cache static files for 1 year in production
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        else:
+            # No cache in development for easier debugging
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+    
+    # Security headers for all responses
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    
+    return response
 
 templates_dir = Path("templates")
 
 # Email configuration (use environment variables for security)
-SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
-SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+# Titan Email SMTP with SSL
+SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.titan.email")
+SMTP_PORT = int(os.environ.get("SMTP_PORT", "465"))  # SSL port
 SMTP_USERNAME = os.environ.get("SMTP_USERNAME", "")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
-RECIPIENT_EMAIL = "hariprasath16032006@gmail.com"
+RECIPIENT_EMAIL = os.environ.get("RECIPIENT_EMAIL", "info@videosnatcherz.tech")
 
 # Global dictionary to store download progress
 download_progress: Dict[str, Dict] = {}
@@ -730,43 +765,90 @@ async def contact_form(
         )
 
     try:
+        from datetime import datetime
+        
+        # Get current timestamp
+        timestamp = datetime.now().strftime("%B %d, %Y at %I:%M %p")
+        
         # Create email message
         msg = MIMEMultipart("alternative")
         msg["From"] = f"{name} <{SMTP_USERNAME}>"
         msg["To"] = RECIPIENT_EMAIL
-        msg["Subject"] = f"[YT Downloader Contact] {subject}"
+        msg["Subject"] = f"New Contact Form Submission — VideoSnatcherz"
         msg["Reply-To"] = email
 
-        # Email body
+        # Email body with timestamp
         text_body = f"""
-New contact form submission from YT Downloader
+New Contact Form Submission — VideoSnatcherz
 
+Submitted: {timestamp}
+
+Contact Information:
+-------------------
 Name: {name}
 Email: {email}
-Subject: {subject}
+
+Subject:
+--------
+{subject}
 
 Message:
+--------
 {message}
 
 ---
-This message was sent via the YT Downloader contact form.
+This message was sent via the VideoSnatcherz contact form.
 Reply directly to {email} to respond.
 """
 
         html_body = f"""
 <html>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-    <h2 style="color: #22c55e;">New Contact Form Submission</h2>
-    <p><strong>From:</strong> {name} ({email})</p>
-    <p><strong>Subject:</strong> {subject}</p>
-    <hr style="border: 1px solid #e2e8f0;">
-    <h3>Message:</h3>
-    <p>{message.replace(chr(10), '<br>')}</p>
-    <hr style="border: 1px solid #e2e8f0;">
-    <p style="color: #64748b; font-size: 14px;">
-        This message was sent via the YT Downloader contact form.<br>
-        Reply directly to <a href="mailto:{email}">{email}</a> to respond.
-    </p>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #22c55e, #14b8a6); padding: 20px; border-radius: 10px 10px 0 0;">
+        <h2 style="color: white; margin: 0;">🎬 New Contact Form Submission</h2>
+        <p style="color: rgba(255,255,255,0.9); margin: 5px 0 0 0; font-size: 14px;">VideoSnatcherz</p>
+    </div>
+    
+    <div style="background: #f8fafc; padding: 20px; border-left: 4px solid #22c55e;">
+        <p style="margin: 0; color: #64748b; font-size: 13px;">
+            <strong>Submitted:</strong> {timestamp}
+        </p>
+    </div>
+    
+    <div style="padding: 20px; background: white;">
+        <h3 style="color: #0f172a; margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
+            Contact Information
+        </h3>
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 8px 0; color: #64748b; width: 80px;"><strong>Name:</strong></td>
+                <td style="padding: 8px 0; color: #0f172a;">{name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #64748b;"><strong>Email:</strong></td>
+                <td style="padding: 8px 0;">
+                    <a href="mailto:{email}" style="color: #22c55e; text-decoration: none;">{email}</a>
+                </td>
+            </tr>
+        </table>
+        
+        <h3 style="color: #0f172a; margin-top: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
+            Subject
+        </h3>
+        <p style="color: #0f172a; margin: 10px 0;">{subject}</p>
+        
+        <h3 style="color: #0f172a; margin-top: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
+            Message
+        </h3>
+        <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; color: #0f172a; white-space: pre-wrap;">{message}</div>
+    </div>
+    
+    <div style="background: #f8fafc; padding: 15px; border-radius: 0 0 10px 10px; text-align: center;">
+        <p style="color: #64748b; font-size: 13px; margin: 0;">
+            This message was sent via the VideoSnatcherz contact form.<br>
+            <a href="mailto:{email}" style="color: #22c55e; text-decoration: none; font-weight: 600;">Click here to reply</a> or reply directly to this email.
+        </p>
+    </div>
 </body>
 </html>
 """
@@ -777,17 +859,31 @@ Reply directly to {email} to respond.
         # Send email
         await asyncio.to_thread(_send_email, msg)
 
-        return {"message": "Message sent successfully! We'll get back to you soon."}
+        return {
+            "message": "Message sent successfully! We'll get back to you soon.",
+            "success": True
+        }
 
+    except smtplib.SMTPAuthenticationError:
+        raise HTTPException(
+            status_code=503,
+            detail="Email authentication failed. Please contact the administrator."
+        )
+    except smtplib.SMTPException as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Failed to send email. Please try again later or contact us directly."
+        ) from exc
     except Exception as exc:
         raise HTTPException(
-            status_code=500, detail=f"Failed to send email: {str(exc)}"
+            status_code=500,
+            detail="An unexpected error occurred. Please try again later."
         ) from exc
 
 
 def _send_email(msg: MIMEMultipart):
-    """Send email using SMTP (blocking operation)."""
-    with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-        server.starttls()
+    """Send email using SMTP with SSL (blocking operation)."""
+    # Use SMTP_SSL for port 465 (SSL/TLS)
+    with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT) as server:
         server.login(SMTP_USERNAME, SMTP_PASSWORD)
         server.send_message(msg)

@@ -90,5 +90,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="/static/app.js"></script>
+<!-- Cache busting: Update version when JS changes -->
+<script src="/static/app.js?v=1.1.0"></script>
 {% endblock %}
