@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import os
 import re
 import shutil
@@ -20,6 +21,30 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Streamin
 from fastapi.staticfiles import StaticFiles
 from jinja2 import TemplateNotFound
 import yt_dlp
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Custom logger for yt-dlp
+class YTDLPLogger:
+    def debug(self, msg):
+        if msg.startswith('[debug] '):
+            pass
+        else:
+            logger.debug(msg)
+    
+    def info(self, msg):
+        logger.info(f"yt-dlp: {msg}")
+    
+    def warning(self, msg):
+        logger.warning(f"yt-dlp: {msg}")
+    
+    def error(self, msg):
+        logger.error(f"yt-dlp: {msg}")
 
 # Determine if running in production
 IS_PRODUCTION = os.environ.get("ENV", "development") == "production"
@@ -125,7 +150,10 @@ def download_media(url: str, media_format: str, quality: Optional[int], audio_qu
     if not validate_video_url(url):
         raise HTTPException(status_code=400, detail="Invalid or unsupported video URL.")
     
+    logger.info(f"Starting download: format={media_format}, quality={quality}, audio_quality={audio_quality}, url={url[:50]}...")
+    
     tmpdir = tempfile.mkdtemp(prefix="ytdl_")
+    logger.info(f"Created temp directory: {tmpdir}")
     outtmpl = str(Path(tmpdir) / "%(title)s.%(ext)s")
 
     def progress_hook(d):
@@ -164,8 +192,21 @@ def download_media(url: str, media_format: str, quality: Optional[int], audio_qu
         "noplaylist": True,
         "restrictfilenames": True,
         "windowsfilenames": True,
-        "quiet": True,
+        "quiet": False,
+        "no_warnings": False,
+        "logger": YTDLPLogger(),
         "progress_hooks": [progress_hook],
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android", "ios", "web"],
+                "skip": ["hls", "dash", "translated_subs"],
+                "player_skip": ["webpage", "configs"],
+            }
+        },
+        "socket_timeout": 30,
+        "retries": 3,
+        "fragment_retries": 3,
+        "http_chunk_size": 10485760,
     }
 
     if media_format == "mp3":
@@ -181,6 +222,8 @@ def download_media(url: str, media_format: str, quality: Optional[int], audio_qu
                         "preferredquality": bitrate,
                     }
                 ],
+                "keepvideo": False,  # Don't keep the original video file
+                "writethumbnail": False,  # Don't write thumbnail
             }
         )
     elif media_format == "m4a":
@@ -200,11 +243,14 @@ def download_media(url: str, media_format: str, quality: Optional[int], audio_qu
         )
 
     try:
+        logger.info(f"Starting yt-dlp download with options: {ydl_opts}")
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
+            logger.info(f"Download completed for {media_format} format")
     except yt_dlp.utils.DownloadError as exc:
         shutil.rmtree(tmpdir, ignore_errors=True)
         error_msg = str(exc)
+        logger.error(f"yt-dlp DownloadError: {error_msg}")
         if "ERROR:" in error_msg:
             # Extract just the relevant error message
             error_msg = error_msg.split("ERROR:")[-1].strip()
@@ -221,16 +267,20 @@ def download_media(url: str, media_format: str, quality: Optional[int], audio_qu
         else:
             raise HTTPException(
                 status_code=400,
-                detail="Unable to download video. Please check the URL and try again."
+                detail=f"Unable to download: {error_msg[:150]}"
             ) from exc
+    except HTTPException:
+        raise
     except Exception as exc:
         shutil.rmtree(tmpdir, ignore_errors=True)
+        error_details = str(exc)
+        logger.error(f"Unexpected error during download: {error_details}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail="An unexpected error occurred during download. Please try again."
+            detail=f"Download error: {error_details[:150]}"
         ) from exc
 
-    # Determine target file extension
+    # Determine target file extension and look for output files
     if media_format == "mp3":
         target_ext = "mp3"
     elif media_format == "m4a":
@@ -238,10 +288,34 @@ def download_media(url: str, media_format: str, quality: Optional[int], audio_qu
     else:
         target_ext = "mp4"
     
+    # Log what files were created
+    all_files_in_dir = list(Path(tmpdir).glob("*"))
+    logger.info(f"Files in temp directory after download: {[f.name for f in all_files_in_dir]}")
+    
+    # First try exact match
     files = list(Path(tmpdir).glob(f"*.{target_ext}"))
+    logger.info(f"Looking for *.{target_ext}, found: {len(files)} files")
+    
+    # If MP3 conversion didn't produce .mp3, look for source audio files
+    if not files and media_format == "mp3":
+        files = list(Path(tmpdir).glob("*.m4a")) + list(Path(tmpdir).glob("*.webm")) + list(Path(tmpdir).glob("*.opus"))
+    
+    # If still no files, check for any media files as fallback
     if not files:
+        all_files = list(Path(tmpdir).glob("*.*"))
+        # Filter for common media extensions
+        media_extensions = {'.mp3', '.m4a', '.mp4', '.webm', '.opus', '.mkv', '.avi'}
+        files = [f for f in all_files if f.suffix.lower() in media_extensions]
+    
+    if not files:
+        # List what files ARE in the directory for debugging
+        all_files = list(Path(tmpdir).glob("*"))
+        file_list = ", ".join([f.name for f in all_files]) if all_files else "none"
         shutil.rmtree(tmpdir, ignore_errors=True)
-        raise HTTPException(status_code=500, detail="No output file produced.")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"No {target_ext} file produced. Files found: {file_list}"
+        )
 
     return files[0], tmpdir
 
@@ -257,12 +331,23 @@ async def stream_audio_download(url: str, media_format: str, audio_quality: Opti
     
     # Get video info to extract direct URL and filename
     ydl_opts = {
-        "quiet": True,
+        "quiet": False,
+        "no_warnings": False,
+        "logger": YTDLPLogger(),
         "noplaylist": True,
         "skip_download": True,
         "format": "bestaudio[ext=m4a]/bestaudio/best",
         "restrictfilenames": True,
         "windowsfilenames": True,
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android", "ios", "web"],
+                "skip": ["hls", "dash", "translated_subs"],
+                "player_skip": ["webpage", "configs"],
+            }
+        },
+        "socket_timeout": 30,
+        "retries": 3,
     }
     
     try:
@@ -369,9 +454,21 @@ def extract_metadata(url: str) -> Dict[str, Optional[str]]:
     if not validate_video_url(url):
         raise HTTPException(status_code=400, detail="Invalid or unsupported video URL.")
     
-    ydl_opts ={"quiet": True,
+    ydl_opts = {
+        "quiet": False,
+        "no_warnings": False,
+        "logger": YTDLPLogger(),
         "noplaylist": True,
         "skip_download": True,
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android", "ios", "web"],
+                "skip": ["hls", "dash", "translated_subs"],
+                "player_skip": ["webpage", "configs"],
+            }
+        },
+        "socket_timeout": 30,
+        "retries": 3,
     }
 
     try:
@@ -391,10 +488,14 @@ def extract_metadata(url: str) -> Dict[str, Optional[str]]:
                 status_code=400,
                 detail="Unable to fetch video information. Please check the URL."
             ) from exc
+    except HTTPException:
+        raise
     except Exception as exc:
+        error_msg = str(exc)
+        logger.error(f"Unexpected error in extract_metadata: {error_msg}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail="An unexpected error occurred while fetching video info."
+            detail=f"Error fetching video info: {error_msg[:150]}"
         ) from exc
 
     thumbnail = info.get("thumbnail")
@@ -421,11 +522,22 @@ def extract_direct_url(url: str, media_format: str, quality: Optional[int], audi
         raise HTTPException(status_code=400, detail="Invalid or unsupported video URL.")
     
     ydl_opts = {
-        "quiet": True,
+        "quiet": False,
+        "no_warnings": False,
+        "logger": YTDLPLogger(),
         "noplaylist": True,
         "skip_download": True,
         "restrictfilenames": True,
         "windowsfilenames": True,
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android", "ios", "web"],
+                "skip": ["hls", "dash", "translated_subs"],
+                "player_skip": ["webpage", "configs"],
+            }
+        },
+        "socket_timeout": 30,
+        "retries": 3,
     }
     
     if media_format == "mp3":
@@ -877,7 +989,7 @@ Reply directly to {email} to respond.
     except Exception as exc:
         raise HTTPException(
             status_code=500,
-            detail="An unexpected error occurred. Please try again later."
+            detail=f"Error processing request: {str(exc)[:150]}"
         ) from exc
 
 
